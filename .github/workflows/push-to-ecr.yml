@@ -57,6 +57,33 @@ jobs:
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
 
+      - name: Use minimal .dockerignore for build context
+        working-directory: ${{ env.CONTEXT_DIR }}
+        run: |
+          # Replace .dockerignore with a minimal one so shared/ and services/ are never excluded.
+          # The repo .dockerignore can over-exclude and shrink context to ~1.7kB on CI.
+          cat > .dockerignore << 'DOCKERIGNORE_EOF'
+          node_modules
+          **/node_modules
+          .git
+          .github
+          .gitignore
+          .gitattributes
+          dist
+          **/dist
+          .nx
+          **/.nx
+          .env
+          .env.*
+          *.log
+          .vscode
+          .idea
+          coverage
+          .nyc_output
+          DOCKERIGNORE_EOF
+          echo "Minimal .dockerignore (ensures shared/ and services/ are included):"
+          cat .dockerignore
+
       - name: Build and push images
         env:
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
@@ -68,7 +95,6 @@ jobs:
           cd "$CONTEXT_DIR"
           ECR="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
 
-          # Build context = app root (must contain package.json, shared/, services/)
           for service in $SERVICES; do
             echo "Building $service (services/$service/Dockerfile)"
             docker build -t "$service:latest" -f "services/$service/Dockerfile" .
