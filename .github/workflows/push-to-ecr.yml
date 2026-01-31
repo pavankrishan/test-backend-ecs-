@@ -13,16 +13,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Debug repo structure
+      - name: Discover services
+        id: discover
         run: |
-          echo "=== PWD ==="
-          pwd
-          echo "=== LS ROOT ==="
-          ls -la
-          echo "=== FIND services ==="
-          find . -maxdepth 4 -type d -name services
-          echo "=== FIND shared ==="
-          find . -maxdepth 4 -type d -name shared
+          # Services = directories under services/ that contain a Dockerfile (not Dockerfile.template)
+          services=$(find services -maxdepth 2 -name Dockerfile -not -path '*/Dockerfile.template' | xargs -I{} dirname {} | xargs -I{} basename {} | sort)
+          echo "services<<EOF" >> $GITHUB_OUTPUT
+          echo "$services" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "Discovered services:"
+          echo "$services"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -38,33 +38,15 @@ jobs:
         env:
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
+          SERVICES: ${{ steps.discover.outputs.services }}
         run: |
           set -e
           ECR="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
 
-          services=(
-            api-gateway
-            student-auth-service
-            trainer-auth-service
-            student-service
-            trainer-service
-            course-service
-            notification-service
-            payment-service
-            chat-service
-            analytics-service
-            admin-service
-            booking-service
-            notification-worker
-            purchase-worker
-            session-worker
-            cache-worker
-            allocation-worker
-          )
-
-          for service in "${services[@]}"; do
-            echo "🚀 Building $service"
-            docker build -t $service -f services/$service/Dockerfile .
-            docker tag $service:latest $ECR/$service:latest
-            docker push $ECR/$service:latest
+          # Build from repo root; each Dockerfile is at services/<name>/Dockerfile
+          for service in $SERVICES; do
+            echo "Building $service (services/$service/Dockerfile)"
+            docker build -t "$service:latest" -f "services/$service/Dockerfile" .
+            docker tag "$service:latest" "$ECR/$service:latest"
+            docker push "$ECR/$service:latest"
           done
