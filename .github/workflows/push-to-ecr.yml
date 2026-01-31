@@ -60,7 +60,9 @@ jobs:
       - name: Ensure ECR repositories exist
         working-directory: ${{ env.CONTEXT_DIR }}
         run: |
-          for service in ${{ steps.discover.outputs.services }}; do
+          set -e
+          echo '${{ steps.discover.outputs.services }}' | while read -r service; do
+            [ -z "$service" ] && continue
             if ! aws ecr describe-repositories --repository-names "$service" 2>/dev/null; then
               echo "Creating ECR repository: $service"
               aws ecr create-repository --repository-name "$service" --image-scanning-configuration scanOnPush=true
