@@ -70,3 +70,8 @@ deployment/
 *.sh
 !scripts/*.sh
 
+# Keep monorepo structure (required for Docker build context)
+!shared
+!shared/**
+!services
+!services/**

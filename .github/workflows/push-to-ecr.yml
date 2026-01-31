@@ -5,6 +5,10 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 
+env:
+  # If your repo root is not the app root (e.g. app lives in backend/), set this in repo vars
+  CONTEXT_DIR: ${{ vars.CONTEXT_DIR || '.' }}
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
@@ -13,10 +17,29 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set build context
+        id: context
+        run: |
+          cd "${{ env.CONTEXT_DIR }}"
+          echo "context_dir=${{ env.CONTEXT_DIR }}" >> $GITHUB_OUTPUT
+          echo "PWD=$(pwd)"
+          echo "Contents:"
+          ls -la
+          echo "Checking required paths..."
+          for path in package.json pnpm-workspace.yaml shared shared/package.json services; do
+            if [ -e "$path" ]; then
+              echo "  OK $path"
+            else
+              echo "  MISSING $path"
+              echo "If your app lives in a subdirectory, set the repository variable CONTEXT_DIR (e.g. backend or .)"
+              exit 1
+            fi
+          done
+
       - name: Discover services
         id: discover
+        working-directory: ${{ env.CONTEXT_DIR }}
         run: |
-          # Services = directories under services/ that contain a Dockerfile (not Dockerfile.template)
           services=$(find services -maxdepth 2 -name Dockerfile -not -path '*/Dockerfile.template' | xargs -I{} dirname {} | xargs -I{} basename {} | sort)
           echo "services<<EOF" >> $GITHUB_OUTPUT
           echo "$services" >> $GITHUB_OUTPUT
@@ -39,11 +62,13 @@ jobs:
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
           SERVICES: ${{ steps.discover.outputs.services }}
+          CONTEXT_DIR: ${{ env.CONTEXT_DIR }}
         run: |
           set -e
+          cd "$CONTEXT_DIR"
           ECR="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
 
-          # Build from repo root; each Dockerfile is at services/<name>/Dockerfile
+          # Build context = app root (must contain package.json, shared/, services/)
           for service in $SERVICES; do
             echo "Building $service (services/$service/Dockerfile)"
             docker build -t "$service:latest" -f "services/$service/Dockerfile" .
