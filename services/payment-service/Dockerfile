@@ -12,7 +12,7 @@
 # ============================================================================
 # STAGE 1: Base image with build tools
 # ============================================================================
-FROM node:18-alpine AS base
+FROM node:20-alpine AS base
 RUN corepack enable && corepack prepare pnpm@8.15.0 --activate
 WORKDIR /app
 
@@ -64,7 +64,7 @@ RUN pnpm --filter @kodingcaravan/payment-service build
 # ============================================================================
 # STAGE 4: Production runtime
 # ============================================================================
-FROM node:18-alpine AS runtime
+FROM node:20-alpine AS runtime
 
 # Security: Run as non-root user
 RUN addgroup -g 1001 -S nodejs && \
