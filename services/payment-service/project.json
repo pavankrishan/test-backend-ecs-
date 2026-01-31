@@ -1,0 +1,41 @@
+{
+  "name": "payment-service",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "services/payment-service/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/services/payment-service",
+        "main": "services/payment-service/src/index.ts",
+        "tsConfig": "services/payment-service/tsconfig.json",
+        "assets": []
+      }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm exec tsx watch services/payment-service/src/index.ts",
+        "env": {
+          "SERVICE_NAME": "Payment Service"
+        }
+      }
+    },
+    "typecheck": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "main": "services/payment-service/src/index.ts",
+        "tsConfig": "services/payment-service/tsconfig.json",
+        "skipTypeCheck": false
+      }
+    },
+    "lint": {
+      "executor": "@nx/linter:eslint",
+      "outputs": ["{options.outputFile}"]
+    }
+  },
+  "tags": ["type:app", "scope:payment"]
+}
+

@@ -1,0 +1,81 @@
+# Docker Compose Override for Local Development
+# Copy this file to docker-compose.override.yml
+# This file is automatically loaded by docker-compose for local development
+# It overrides production settings in docker-compose.yml
+
+version: '3.8'
+
+services:
+  # Override services for development
+  api-gateway:
+    environment:
+      NODE_ENV: development
+    env_file:
+      - .env.development
+
+  student-auth-service:
+    environment:
+      NODE_ENV: development
+    env_file:
+      - .env.development
+
+  trainer-auth-service:
+    environment:
+      NODE_ENV: development
+    env_file:
+      - .env.development
+
+  student-service:
+    environment:
+      NODE_ENV: development
+    env_file:
+      - .env.development
+
+  trainer-service:
+    environment:
+      NODE_ENV: development
+    env_file:
+      - .env.development
+
+  course-service:
+    environment:
+      NODE_ENV: development
+    env_file:
+      - .env.development
+
+  notification-service:
+    environment:
+      NODE_ENV: development
+    env_file:
+      - .env.development
+
+  payment-service:
+    environment:
+      NODE_ENV: development
+    env_file:
+      - .env.development
+
+  chat-service:
+    environment:
+      NODE_ENV: development
+    env_file:
+      - .env.development
+
+  analytics-service:
+    environment:
+      NODE_ENV: development
+    env_file:
+      - .env.development
+
+  admin-service:
+    environment:
+      NODE_ENV: development
+    env_file:
+      - .env.development
+
+  booking-service:
+    environment:
+      NODE_ENV: development
+    env_file:
+      - .env.development
+

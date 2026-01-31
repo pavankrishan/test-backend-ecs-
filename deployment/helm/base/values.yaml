@@ -1,0 +1,112 @@
+# Default values for microservices
+# Override in service-specific charts
+
+replicaCount: 2
+
+image:
+  repository: kodingcaravan
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: ClusterIP
+  port: 3000
+  targetPort: 3000
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+env:
+  NODE_ENV: production
+  LOG_LEVEL: info
+
+envFrom: []
+
+# Database connection secrets
+database:
+  postgres:
+    host: ""
+    port: 5432
+    user: ""
+    password: ""
+    database: ""
+  
+  mongo:
+    uri: ""
+  
+  redis:
+    host: ""
+    port: 6379
+
+# Service mesh / ingress
+ingress:
+  enabled: false
+  className: "nginx"
+  annotations: {}
+  hosts:
+    - host: ""
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# Service mesh
+serviceMesh:
+  enabled: false
+
+# Pod annotations
+podAnnotations: {}
+
+# Pod security context
+podSecurityContext:
+  fsGroup: 2000
+
+securityContext:
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+

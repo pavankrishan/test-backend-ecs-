@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "target": "es2020",
+    "baseUrl": ".",
+    "types": ["node"],
+    "skipLibCheck": true,
+    "paths": {
+      "@kodingcaravan/shared": ["../../shared/dist"],
+      "@kodingcaravan/shared/*": ["../../shared/dist/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.d.ts"],
+  "exclude": ["node_modules", "dist"]
+}
+

@@ -1,0 +1,76 @@
+services:
+  # Main API Gateway Service (Public Web Service)
+  - type: web
+    name: kc-backend-api-gateway
+    runtime: node
+    plan: starter  # Change to 'standard' or 'pro' for production
+    region: oregon  # Change to your preferred region
+    buildCommand: |
+      npm install -g pnpm@8.15.0
+      pnpm install --frozen-lockfile
+      pnpm --filter @kodingcaravan/shared build
+      pnpm build
+    startCommand: |
+      node scripts/start-production.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Note: Render automatically sets PORT env var
+      # The start-production.js script will use PORT for API_GATEWAY_PORT
+      # Database Configuration
+      - key: POSTGRES_URL
+        sync: false  # Set this in Render dashboard
+      # MongoDB Configuration
+      - key: MONGO_URI
+        sync: false  # Set this in Render dashboard
+      # Redis Configuration
+      - key: REDIS_URL
+        sync: false  # Set this in Render dashboard
+      # JWT Secrets (REQUIRED - Set in Render dashboard)
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      # CORS
+      - key: CORS_ORIGIN
+        sync: false  # Add your frontend URLs
+      # Service Ports (all services run on same instance)
+      - key: STUDENT_AUTH_SERVICE_PORT
+        value: 3001
+      - key: TRAINER_AUTH_SERVICE_PORT
+        value: 3002
+      - key: STUDENT_SERVICE_PORT
+        value: 3003
+      - key: TRAINER_SERVICE_PORT
+        value: 3004
+      - key: COURSE_SERVICE_PORT
+        value: 3005
+      - key: NOTIFICATION_SERVICE_PORT
+        value: 3006
+      - key: PAYMENT_SERVICE_PORT
+        value: 3007
+      - key: CHAT_SERVICE_PORT
+        value: 3008
+      - key: ANALYTICS_SERVICE_PORT
+        value: 3009
+      - key: ADMIN_SERVICE_PORT
+        value: 3010
+      - key: BOOKING_SERVICE_PORT
+        value: 3011
+      - key: SERVICES_HOST
+        value: http://localhost  # All services run on same instance
+
+databases:
+  # PostgreSQL Database (Optional - if using Render's managed PostgreSQL)
+  - name: kc-postgres
+    databaseName: kodingcaravan
+    user: kodingcaravan
+    plan: starter  # Change to 'standard' or 'pro' for production
+
+  # Redis (Optional - if using Render's managed Redis)
+  - name: kc-redis
+    plan: starter  # Change to 'standard' or 'pro' for production
+

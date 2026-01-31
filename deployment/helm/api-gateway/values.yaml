@@ -1,0 +1,55 @@
+base:
+  nameOverride: "api-gateway"
+  fullnameOverride: "api-gateway"
+
+replicaCount: 3
+
+image:
+  repository: kodingcaravan/api-gateway
+  tag: "latest"
+
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: 3000
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 200m
+    memory: 256Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 20
+  targetCPUUtilizationPercentage: 70
+
+env:
+  NODE_ENV: production
+  LOG_LEVEL: info
+  SERVICE_NAME: api-gateway
+  PORT: "3000"
+  CORS_ORIGIN: "*"
+  JWT_SECRET: ""  # Set via secrets
+  JWT_REFRESH_SECRET: ""  # Set via secrets
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+  hosts:
+    - host: api.kodingcaravan.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: api-gateway-tls
+      hosts:
+        - api.kodingcaravan.com
+

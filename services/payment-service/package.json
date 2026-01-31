@@ -1,0 +1,31 @@
+{
+  "name": "@kodingcaravan/payment-service",
+  "version": "1.0.0",
+  "description": "Payment Service",
+  "main": "dist/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "npm run clean && tsc -p tsconfig.json",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {
+    "@kodingcaravan/shared": "workspace:*",
+    "connect-timeout": "^1.9.0",
+    "express": "^4.18.2",
+    "pg": "^8.11.5",
+    "razorpay": "^2.9.6",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/connect-timeout": "^0.0.36",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.11.0",
+    "@types/pg": "^8.11.6",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  }
+}

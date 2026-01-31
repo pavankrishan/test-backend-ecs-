@@ -1,0 +1,82 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+*.log
+
+# Production
+dist/
+build/
+.nx/
+
+# Prevent accidentally committing compiled JS in TS folders
+# Match both src/ subdirectories and root-level service files
+services/**/*.js
+services/**/*.js.map
+services/**/*.d.ts
+services/**/*.d.ts.map
+# But allow legitimate JS files (config files, etc.)
+!services/**/*.config.js
+!services/**/jest.config.js
+!services/**/jest.setup.js
+
+# Ignore compiled files in shared directory (should only be in dist/)
+shared/**/*.js
+shared/**/*.js.map
+shared/**/*.d.ts
+shared/**/*.d.ts.map
+!shared/dist/**  # Allow dist folder content
+!shared/node_modules/**  # Allow node_modules
+
+# Ignore compiled files in scripts directory (build artifacts from .ts files)
+scripts/**/*.js
+scripts/**/*.js.map
+scripts/**/*.d.ts
+scripts/**/*.d.ts.map
+!scripts/**/*.config.js  # Allow config files
+!scripts/clean-build-artifacts.js  # Allow this script
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+!.env.development.template
+!.env.production.template
+!.env.example
+!env.template
+docker-compose.override.yml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# TypeScript
+*.tsbuildinfo
+
+# Helm
+deployment/helm/**/charts/
+deployment/helm/**/Chart.lock

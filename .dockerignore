@@ -1,0 +1,72 @@
+# Dependencies
+node_modules
+**/node_modules
+# Note: pnpm-lock.yaml is needed for Docker builds, so don't ignore it
+
+# Build outputs (will be rebuilt in Docker)
+dist
+**/dist
+.nx
+**/.nx
+
+# Development files
+.env
+.env.local
+.env.*.local
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+!README.md
+docs/
+
+# Scripts (keep only necessary ones)
+scripts/
+!scripts/check-services.js
+
+# Test files
+**/*.test.ts
+**/*.spec.ts
+**/__tests__/
+**/__mocks__/
+coverage/
+.nyc_output
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Deployment configs (keep docker-compose)
+render.yaml
+deployment/
+
+# Migration files (keep for runtime)
+# migrations/
+
+# Other
+*.sql
+*.ps1
+*.sh
+!scripts/*.sh
+

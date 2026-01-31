@@ -1,0 +1,41 @@
+{
+  "name": "student-service",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "services/student-service",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/services/student-service",
+        "main": "services/student-service/index.ts",
+        "tsConfig": "services/student-service/tsconfig.json",
+        "assets": []
+      }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm exec tsx watch services/student-service/index.ts",
+        "env": {
+          "SERVICE_NAME": "Student Service"
+        }
+      }
+    },
+    "typecheck": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "main": "services/student-service/index.ts",
+        "tsConfig": "services/student-service/tsconfig.json",
+        "skipTypeCheck": false
+      }
+    },
+    "lint": {
+      "executor": "@nx/linter:eslint",
+      "outputs": ["{options.outputFile}"]
+    }
+  },
+  "tags": ["type:app", "scope:student"]
+}
+

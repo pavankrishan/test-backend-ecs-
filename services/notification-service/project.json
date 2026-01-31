@@ -1,0 +1,41 @@
+{
+  "name": "notification-service",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "services/notification-service/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/services/notification-service",
+        "main": "services/notification-service/src/index.ts",
+        "tsConfig": "services/notification-service/tsconfig.json",
+        "assets": []
+      }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm exec tsx watch services/notification-service/src/index.ts",
+        "env": {
+          "SERVICE_NAME": "Notification Service"
+        }
+      }
+    },
+    "typecheck": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "main": "services/notification-service/src/index.ts",
+        "tsConfig": "services/notification-service/tsconfig.json",
+        "skipTypeCheck": false
+      }
+    },
+    "lint": {
+      "executor": "@nx/linter:eslint",
+      "outputs": ["{options.outputFile}"]
+    }
+  },
+  "tags": ["type:app", "scope:notification"]
+}
+

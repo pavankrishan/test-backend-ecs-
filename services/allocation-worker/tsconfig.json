@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "paths": {
+      "@kodingcaravan/shared": ["../../shared/dist/index"],
+      "@kodingcaravan/shared/*": ["../../shared/dist/*"],
+      "@kodingcaravan/admin-service/*": ["../admin-service/dist/*"]
+    },
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*"],
+  "references": [
+    { "path": "../../shared" }
+  ]
+}
+

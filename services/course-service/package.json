@@ -1,0 +1,50 @@
+{
+  "name": "@kodingcaravan/course-service",
+  "version": "1.0.0",
+  "description": "Course Service",
+  "main": "dist/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "npm run clean && tsc -p tsconfig.json",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint src --ext .ts",
+    "create-robotics-course": "tsx scripts/createRoboticsCourse.ts",
+    "create-robotics-course-log": "tsx scripts/createRoboticsCourseWithLog.ts",
+    "create-ai-course": "tsx scripts/createAICourse.ts",
+    "create-ai-course-cycle1": "tsx scripts/createAICourseGrowthCycle1.ts",
+    "create-app-making-course": "tsx scripts/createAppMakingCourse.ts",
+    "complete-course": "tsx scripts/completeCourse.ts",
+    "check-db": "tsx scripts/checkDatabaseConnection.ts",
+    "fix-purchases": "tsx scripts/fixPurchaseRecords.ts"
+  },
+  "dependencies": {
+    "@kodingcaravan/shared": "workspace:*",
+    "compression": "^1.8.1",
+    "connect-timeout": "^1.9.0",
+    "express": "^4.18.2",
+    "helmet": "^7.2.0",
+    "ioredis": "^5.3.2",
+    "mongoose": "^8.0.3",
+    "multer": "^1.4.5-lts.1",
+    "pg": "^8.11.3",
+    "uuid": "^9.0.1",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/compression": "^1.8.1",
+    "@types/connect-timeout": "^0.0.36",
+    "@types/express": "^4.17.21",
+    "@types/ioredis": "^5.0.0",
+    "@types/multer": "^1.4.11",
+    "@types/node": "^20.11.0",
+    "@types/pdf-parse": "^1.1.5",
+    "@types/pg": "^8.10.9",
+    "@types/uuid": "^9.0.7",
+    "pdf-parse": "^2.4.5",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  }
+}

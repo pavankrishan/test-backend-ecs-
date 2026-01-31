@@ -1,0 +1,41 @@
+{
+  "name": "analytics-service",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "services/analytics-service/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/services/analytics-service",
+        "main": "services/analytics-service/src/index.ts",
+        "tsConfig": "services/analytics-service/tsconfig.json",
+        "assets": []
+      }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm exec tsx watch services/analytics-service/src/index.ts",
+        "env": {
+          "SERVICE_NAME": "Analytics Service"
+        }
+      }
+    },
+    "typecheck": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "main": "services/analytics-service/src/index.ts",
+        "tsConfig": "services/analytics-service/tsconfig.json",
+        "skipTypeCheck": false
+      }
+    },
+    "lint": {
+      "executor": "@nx/linter:eslint",
+      "outputs": ["{options.outputFile}"]
+    }
+  },
+  "tags": ["type:app", "scope:analytics"]
+}
+

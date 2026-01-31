@@ -1,0 +1,24 @@
+{
+  "name": "@kodingcaravan/notification-worker",
+  "version": "1.0.0",
+  "description": "Notification worker - consumes NOTIFICATION_REQUESTED events",
+  "main": "dist/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts"
+  },
+  "dependencies": {
+    "@kodingcaravan/shared": "file:../../shared",
+    "kafkajs": "^2.2.4",
+    "mongodb": "^6.3.0",
+    "pg": "^8.11.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/pg": "^8.10.9",
+    "typescript": "^5.3.3",
+    "ts-node": "^10.9.2"
+  }
+}

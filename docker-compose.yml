@@ -1,0 +1,512 @@
+services:
+  # Databases - All using cloud services
+  # PostgreSQL - Using cloud PostgreSQL (managed service)
+  # All services connect to cloud PostgreSQL via POSTGRES_URL environment variable
+  # No local PostgreSQL container needed
+
+  # MongoDB - Using cloud MongoDB Atlas (mongodb+srv://)
+  # All services connect to MongoDB Atlas via MONGO_URI environment variable
+  # No local MongoDB container needed
+
+  # Redis - Using cloud Redis (Upstash)
+  # All services connect to cloud Redis via REDIS_URL environment variable
+  # No local Redis container needed
+
+  # Message Queue
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: kodingcaravan-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_MAX_CLIENT_CNXNS: 60
+      ZOOKEEPER_AUTOPURGE_SNAP_RETAIN_COUNT: 3
+      ZOOKEEPER_AUTOPURGE_PURGE_INTERVAL: 24
+      # Enable four-letter commands for healthcheck
+      ZOOKEEPER_4LW_COMMANDS_WHITELIST: "ruok,srvr,stat"
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_logs:/var/lib/zookeeper/log
+    healthcheck:
+      test: ["CMD-SHELL", "echo srvr | nc localhost 2181 | grep -q 'Zookeeper version' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - kodingcaravan-network
+    restart: unless-stopped
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kodingcaravan-kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "${KAFKA_PORT:-9092}:9092"
+    environment:
+      # Stable broker ID - must be unique and persistent
+      KAFKA_BROKER_ID: 1
+      # ZooKeeper connection - wait for ZooKeeper to be healthy
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ZOOKEEPER_SESSION_TIMEOUT_MS: 18000
+      KAFKA_ZOOKEEPER_CONNECTION_TIMEOUT_MS: 18000
+      # Listener configuration
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      # Single broker configuration (dev)
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      # Log retention and cleanup
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_LOG_SEGMENT_BYTES: 1073741824
+      KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS: 300000
+      # Prevent broker ID conflicts on restart
+      KAFKA_BROKER_ID_GENERATION_ENABLE: "false"
+      # Auto create topics (disabled - use kafka-init)
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      # Num network threads
+      KAFKA_NUM_NETWORK_THREADS: 8
+      KAFKA_NUM_IO_THREADS: 8
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - kodingcaravan-network
+    restart: unless-stopped
+
+  kafka-init:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kodingcaravan-kafka-init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "[Kafka Init] Waiting for Kafka to be ready..."
+        for i in $$(seq 1 60); do
+          if kafka-broker-api-versions --bootstrap-server kafka:9092 > /dev/null 2>&1; then
+            echo "[Kafka Init] Kafka is ready"
+            break
+          fi
+          if [ $$i -eq 60 ]; then
+            echo "[Kafka Init] ERROR: Kafka not ready after 60s"
+            exit 1
+          fi
+          echo "[Kafka Init] Waiting... ($$i/60)"
+          sleep 5
+        done
+        echo "[Kafka Init] Creating topics..."
+        kafka-topics --create --bootstrap-server kafka:9092 --topic purchase-confirmed --partitions 3 --replication-factor 1 --if-not-exists || true
+        kafka-topics --create --bootstrap-server kafka:9092 --topic purchase-created --partitions 3 --replication-factor 1 --if-not-exists || true
+        kafka-topics --create --bootstrap-server kafka:9092 --topic trainer-allocated --partitions 3 --replication-factor 1 --if-not-exists || true
+        kafka-topics --create --bootstrap-server kafka:9092 --topic sessions-generated --partitions 3 --replication-factor 1 --if-not-exists || true
+        kafka-topics --create --bootstrap-server kafka:9092 --topic course-access-granted --partitions 3 --replication-factor 1 --if-not-exists || true
+        kafka-topics --create --bootstrap-server kafka:9092 --topic notification-requested --partitions 3 --replication-factor 1 --if-not-exists || true
+        kafka-topics --create --bootstrap-server kafka:9092 --topic dead-letter-queue --partitions 3 --replication-factor 1 --if-not-exists || true
+        echo "[Kafka Init] ✅ Topics created"
+        kafka-topics --list --bootstrap-server kafka:9092
+    networks:
+      - kodingcaravan-network
+    restart: "no"
+
+  # MinIO for S3-compatible storage (local development)
+  minio:
+    image: minio/minio:latest
+    container_name: kodingcaravan-minio
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - kodingcaravan-network
+
+  # Backend Services
+  api-gateway:
+    build:
+      context: .
+      dockerfile: services/api-gateway/Dockerfile
+    container_name: kodingcaravan-api-gateway
+    ports:
+      - "${API_GATEWAY_PORT:-3000}:3000"
+    env_file:
+      - .env.${ENV:-production}
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      # Explicitly mark as Docker container for service discovery
+      DOCKER: 'true'
+      # POSTGRES_URL set via .env file (cloud database)
+      # MONGO_URI set via .env file (cloud database)
+      # REDIS_URL/REDIS_HOST set via .env file (Upstash Redis)
+      KAFKA_BROKERS: kafka:9092
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - kodingcaravan-network
+    restart: unless-stopped
+
+  student-auth-service:
+    build:
+      context: .
+      dockerfile: services/student-auth-service/Dockerfile
+    container_name: kodingcaravan-student-auth
+    ports:
+      - "${STUDENT_AUTH_SERVICE_PORT:-3001}:3001"
+    env_file:
+      - .env.${ENV:-production}
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      # Explicitly mark as Docker container for service discovery
+      DOCKER: 'true'
+      # POSTGRES_URL set via .env file (cloud database)
+      # REDIS_URL/REDIS_HOST set via .env file (Upstash Redis)
+    networks:
+      - kodingcaravan-network
+    restart: unless-stopped
+
+  trainer-auth-service:
+    build:
+      context: .
+      dockerfile: services/trainer-auth-service/Dockerfile
+    container_name: kodingcaravan-trainer-auth
+    ports:
+      - "${TRAINER_AUTH_SERVICE_PORT:-3002}:3002"
+    env_file:
+      - .env.${ENV:-production}
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      # POSTGRES_URL set via .env file (cloud database)
+      # REDIS_URL/REDIS_HOST set via .env file (Upstash Redis)
+    networks:
+      - kodingcaravan-network
+    restart: unless-stopped
+
+  student-service:
+    build:
+      context: .
+      dockerfile: services/student-service/Dockerfile
+    container_name: kodingcaravan-student-service
+    ports:
+      - "${STUDENT_SERVICE_PORT:-3003}:3003"
+    env_file:
+      - .env.${ENV:-production}
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      # Explicitly mark as Docker container for service discovery
+      DOCKER: 'true'
+      # POSTGRES_URL set via .env file (cloud database)
+      # REDIS_URL/REDIS_HOST set via .env file (Upstash Redis)
+    networks:
+      - kodingcaravan-network
+    restart: unless-stopped
+
+  trainer-service:
+    build:
+      context: .
+      dockerfile: services/trainer-service/Dockerfile
+    container_name: kodingcaravan-trainer-service
+    ports:
+      - "${TRAINER_SERVICE_PORT:-3004}:3004"
+    env_file:
+      - .env.${ENV:-production}
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      # POSTGRES_URL set via .env file (cloud database)
+      # REDIS_URL/REDIS_HOST set via .env file (Upstash Redis)
+    networks:
+      - kodingcaravan-network
+    restart: unless-stopped
+
+  course-service:
+    build:
+      context: .
+      dockerfile: services/course-service/Dockerfile
+    container_name: kodingcaravan-course-service
+    ports:
+      - "${COURSE_SERVICE_PORT:-3005}:3005"
+    env_file:
+      - .env.${ENV:-production}
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      SERVICE_NAME: course-service
+      # POSTGRES_URL set via .env file (cloud database)
+      # MONGO_URI set via .env file (cloud database)
+      # REDIS_URL/REDIS_HOST set via .env file (Upstash Redis)
+    networks:
+      - kodingcaravan-network
+    restart: unless-stopped
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: services/notification-service/Dockerfile
+    container_name: kodingcaravan-notification-service
+    ports:
+      - "${NOTIFICATION_SERVICE_PORT:-3006}:3006"
+    env_file:
+      - .env.${ENV:-production}
+      - .env
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      # POSTGRES_URL set via .env file (cloud database)
+      # REDIS_URL/REDIS_HOST set via .env file (Upstash Redis)
+      KAFKA_BROKERS: kafka:9092
+      # Run without FCM when not configured (avoids restart loop). Set FCM vars to enable push.
+      FCM_OPTIONAL: ${FCM_OPTIONAL:-true}
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - kodingcaravan-network
+    restart: unless-stopped
+
+  notification-worker:
+    build:
+      context: .
+      dockerfile: services/notification-worker/Dockerfile
+    container_name: kodingcaravan-notification-worker
+    env_file:
+      - .env.${ENV:-production}
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      SERVICE_NAME: notification-worker
+      KAFKA_BROKERS: kafka:9092
+      NOTIFICATION_SERVICE_URL: http://notification-service:3006
+      # MONGO_URI set via .env (for fallback insert)
+      # POSTGRES_URL set via .env (for idempotency)
+    depends_on:
+      kafka:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+      notification-service:
+        condition: service_started
+    networks:
+      - kodingcaravan-network
+    restart: unless-stopped
+
+  payment-service:
+    build:
+      context: .
+      dockerfile: services/payment-service/Dockerfile
+    container_name: kodingcaravan-payment-service
+    ports:
+      - "${PAYMENT_SERVICE_PORT:-3007}:3007"
+    env_file:
+      - .env.${ENV:-production}
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      # POSTGRES_URL set via .env file (cloud database)
+      # REDIS_URL/REDIS_HOST set via .env file (Upstash Redis)
+      KAFKA_BROKERS: kafka:9092
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - kodingcaravan-network
+    restart: unless-stopped
+
+  chat-service:
+    build:
+      context: .
+      dockerfile: services/chat-service/Dockerfile
+    container_name: kodingcaravan-chat-service
+    ports:
+      - "${CHAT_SERVICE_PORT:-3008}:3008"
+    env_file:
+      - .env.${ENV:-production}
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      # Set MONGO_URI via .env or ECS; do not default to a real connection string in repo (production safety)
+      MONGO_URI: ${MONGO_URI}
+      MONGO_DB_NAME: ${MONGO_DB_NAME:-kodingcaravan}
+      # POSTGRES_URL set via .env file (cloud database)
+      # REDIS_URL/REDIS_HOST set via .env file (Upstash Redis)
+    networks:
+      - kodingcaravan-network
+    restart: unless-stopped
+
+  analytics-service:
+    build:
+      context: .
+      dockerfile: services/analytics-service/Dockerfile
+    container_name: kodingcaravan-analytics-service
+    ports:
+      - "${ANALYTICS_SERVICE_PORT:-3009}:3009"
+    env_file:
+      - .env.${ENV:-production}
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      # POSTGRES_URL set via .env file (cloud database)
+      # REDIS_URL/REDIS_HOST set via .env file (Upstash Redis)
+    networks:
+      - kodingcaravan-network
+    restart: unless-stopped
+
+  admin-service:
+    build:
+      context: .
+      dockerfile: services/admin-service/Dockerfile
+    container_name: kodingcaravan-admin-service
+    ports:
+      - "${ADMIN_SERVICE_PORT:-3010}:3010"
+    env_file:
+      - .env.${ENV:-production}
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      KAFKA_BROKERS: kafka:9092
+      # Admin calls course-service for purchase/session count; use Docker service name
+      COURSE_SERVICE_URL: http://course-service:3005
+      # POSTGRES_URL set via .env file (cloud database)
+      # MONGO_URI set via .env file (cloud database)
+      # REDIS_URL/REDIS_HOST set via .env file (Upstash Redis)
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - kodingcaravan-network
+    restart: unless-stopped
+
+  booking-service:
+    build:
+      context: .
+      dockerfile: services/booking-service/Dockerfile
+    container_name: kodingcaravan-booking-service
+    ports:
+      - "${BOOKING_SERVICE_PORT:-3011}:3011"
+    env_file:
+      - .env.${ENV:-production}
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      # POSTGRES_URL set via .env file (cloud database)
+      # REDIS_HOST is set via .env file (Upstash Redis URL)
+    networks:
+      - kodingcaravan-network
+    restart: unless-stopped
+
+  # Event-Driven Workers
+  purchase-worker:
+    build:
+      context: .
+      dockerfile: services/purchase-worker/Dockerfile
+    container_name: kodingcaravan-purchase-worker
+    env_file:
+      - .env.${ENV:-production}
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      SERVICE_NAME: purchase-worker
+      KAFKA_BROKERS: kafka:9092
+      # POSTGRES_URL set via .env file (cloud database)
+    depends_on:
+      kafka:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+    networks:
+      - kodingcaravan-network
+    restart: unless-stopped
+
+  allocation-worker:
+    build:
+      context: .
+      dockerfile: services/allocation-worker/Dockerfile
+    container_name: kodingcaravan-allocation-worker
+    env_file:
+      - .env.${ENV:-production}
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      SERVICE_NAME: allocation-worker
+      KAFKA_BROKERS: kafka:9092
+      ADMIN_SERVICE_URL: http://admin-service:3010
+      ADMIN_SERVICE_PORT: 3010
+      SERVICES_HOST: admin-service
+      # POSTGRES_URL set via .env file (cloud database)
+    depends_on:
+      kafka:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+      admin-service:
+        condition: service_started
+    networks:
+      - kodingcaravan-network
+    restart: unless-stopped
+
+  session-worker:
+    build:
+      context: .
+      dockerfile: services/session-worker/Dockerfile
+    container_name: kodingcaravan-session-worker
+    env_file:
+      - .env.${ENV:-production}
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      SERVICE_NAME: session-worker
+      KAFKA_BROKERS: kafka:9092
+      # POSTGRES_URL set via .env file (cloud database)
+      # Longer statement timeout for top-up cron (cloud DB latency; default 30s can be too low)
+      DB_STATEMENT_TIMEOUT: ${DB_STATEMENT_TIMEOUT:-120000}
+    depends_on:
+      kafka:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+    networks:
+      - kodingcaravan-network
+    restart: unless-stopped
+
+  cache-worker:
+    build:
+      context: .
+      dockerfile: services/cache-worker/Dockerfile
+    container_name: kodingcaravan-cache-worker
+    env_file:
+      - .env.${ENV:-production}
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      SERVICE_NAME: cache-worker
+      KAFKA_BROKERS: kafka:9092
+      # POSTGRES_URL set via .env file (cloud database)
+      # REDIS_URL/REDIS_HOST set via .env file (Upstash Redis)
+    depends_on:
+      kafka:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+    networks:
+      - kodingcaravan-network
+    restart: unless-stopped
+
+volumes:
+  minio_data:
+  zookeeper_data:
+  zookeeper_logs:
+  kafka_data:
+
+networks:
+  kodingcaravan-network:
+    driver: bridge
+

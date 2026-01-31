@@ -1,0 +1,41 @@
+{
+  "name": "student-auth-service",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "services/student-auth-service/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/services/student-auth-service",
+        "main": "services/student-auth-service/src/index.ts",
+        "tsConfig": "services/student-auth-service/tsconfig.json",
+        "assets": []
+      }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm exec tsx watch services/student-auth-service/src/index.ts",
+        "env": {
+          "SERVICE_NAME": "Student Auth Service"
+        }
+      }
+    },
+    "typecheck": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "main": "services/student-auth-service/src/index.ts",
+        "tsConfig": "services/student-auth-service/tsconfig.json",
+        "skipTypeCheck": false
+      }
+    },
+    "lint": {
+      "executor": "@nx/linter:eslint",
+      "outputs": ["{options.outputFile}"]
+    }
+  },
+  "tags": ["type:app", "scope:auth", "scope:student"]
+}
+

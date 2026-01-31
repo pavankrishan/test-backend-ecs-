@@ -1,0 +1,7 @@
+apiVersion: v2
+name: kodingcaravan-base
+description: Base Helm chart for Koding Caravan microservices
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+

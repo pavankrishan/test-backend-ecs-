@@ -1,0 +1,37 @@
+{
+  "name": "@kodingcaravan/admin-service",
+  "version": "1.0.0",
+  "description": "Admin Service",
+  "main": "dist/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "npm run clean && tsc -p tsconfig.json",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint src --ext .ts",
+    "test-auto-assign": "tsx scripts/testAutoAssignment.ts",
+    "create-purchase": "tsx scripts/createCoursePurchase.ts"
+  },
+  "dependencies": {
+    "@kodingcaravan/shared": "workspace:*",
+    "axios": "^1.13.2",
+    "bcryptjs": "^2.4.3",
+    "connect-timeout": "^1.9.0",
+    "express": "^4.18.2",
+    "livekit-server-sdk": "^2.0.0",
+    "pg": "^8.11.5",
+    "socket.io": "^4.8.1",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/connect-timeout": "^0.0.36",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.11.0",
+    "@types/pg": "^8.11.6",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  }
+}

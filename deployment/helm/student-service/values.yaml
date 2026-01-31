@@ -1,0 +1,45 @@
+base:
+  nameOverride: "student-service"
+  fullnameOverride: "student-service"
+
+replicaCount: 2
+
+image:
+  repository: kodingcaravan/student-service
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 3001
+  targetPort: 3001
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+env:
+  NODE_ENV: production
+  LOG_LEVEL: info
+  SERVICE_NAME: student-service
+  PORT: "3001"
+
+database:
+  postgres:
+    host: "postgres-service"
+    port: 5432
+    database: "student_db"
+
+# Internal service - no ingress
+ingress:
+  enabled: false
+

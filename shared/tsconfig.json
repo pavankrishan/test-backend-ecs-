@@ -1,0 +1,35 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./",
+    "declaration": true,
+    "declarationMap": true,
+    "composite": true,
+    "baseUrl": "./",
+    "paths": {
+      "@kodingcaravan/shared/*": ["./*"]
+    },
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "downlevelIteration": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "index.ts",
+    "src/**/*.ts",
+    "config/**/*.ts",
+    "databases/**/*.ts",
+    "middlewares/**/*.ts",
+    "utils/**/*.ts",
+    "events/**/*.ts",
+    "types/**/*.ts",
+    "types/**/*.d.ts",
+    "worker/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}
+

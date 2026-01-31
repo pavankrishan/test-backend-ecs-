@@ -1,0 +1,30 @@
+{
+  "name": "@kodingcaravan/trainer-service",
+  "version": "1.0.0",
+  "description": "Trainer Service",
+  "main": "dist/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "npm run clean && tsc -p tsconfig.json",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {
+    "@kodingcaravan/shared": "workspace:*",
+    "connect-timeout": "^1.9.0",
+    "express": "^4.18.2",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/connect-timeout": "^0.0.36",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.11.0",
+    "@types/pg": "^8.10.9",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  }
+}
+

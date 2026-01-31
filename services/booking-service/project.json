@@ -1,0 +1,31 @@
+{
+	"$schema": "../../node_modules/nx/schemas/project-schema.json",
+	"sourceRoot": "src",
+	"projectType": "application",
+	"targets": {
+		"build": {
+			"executor": "@nx/js:tsc",
+			"outputs": ["{options.outputPath}"],
+			"options": {
+				"outputPath": "dist",
+				"main": "src/index.ts",
+				"tsConfig": "tsconfig.json",
+				"assets": []
+			}
+		},
+		"dev": {
+			"executor": "nx:run-commands",
+			"options": {
+				"command": "pnpm dev",
+				"cwd": "services/booking-service"
+			}
+		},
+		"typecheck": {
+			"executor": "@nx/js:tsc",
+			"options": {
+				"tsConfig": "tsconfig.json"
+			}
+		}
+	}
+}
+
