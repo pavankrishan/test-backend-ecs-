@@ -13,6 +13,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Debug repo structure
+        run: |
+          echo "=== PWD ==="
+          pwd
+          echo "=== LS ROOT ==="
+          ls -la
+          echo "=== FIND services ==="
+          find . -maxdepth 4 -type d -name services
+          echo "=== FIND shared ==="
+          find . -maxdepth 4 -type d -name shared
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -52,9 +63,8 @@ jobs:
           )
 
           for service in "${services[@]}"; do
-          echo "🚀 Building $service"
-          docker build -t $service -f services/$service/Dockerfile .
-          docker tag $service:latest $ECR/$service:latest
-          docker push $ECR/$service:latest
+            echo "🚀 Building $service"
+            docker build -t $service -f services/$service/Dockerfile .
+            docker tag $service:latest $ECR/$service:latest
+            docker push $ECR/$service:latest
           done
-
