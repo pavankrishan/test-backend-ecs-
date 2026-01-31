@@ -32,7 +32,7 @@ RUN cd services/admin-service && pnpm run build
 RUN cd services/allocation-worker && pnpm run build
 
 # Remove dev dependencies to reduce image size
-RUN pnpm prune --production --yes
+RUN pnpm prune --production
 
 # Ensure shared package is properly linked in allocation-worker's node_modules
 # After prune, the workspace link might be broken, so we manually ensure it exists
