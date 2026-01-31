@@ -12,7 +12,7 @@
 # ============================================================================
 # STAGE 1: Base image with build tools
 # ============================================================================
-FROM node:18-alpine AS base
+FROM node:20-alpine AS base
 RUN corepack enable && corepack prepare pnpm@8.15.0 --activate
 WORKDIR /app
 
@@ -64,7 +64,7 @@ RUN pnpm --filter @kodingcaravan/admin-service build
 # ============================================================================
 # STAGE 4: Production runtime
 # ============================================================================
-FROM node:18-alpine AS runtime
+FROM node:20-alpine AS runtime
 
 # Security: Run as non-root user
 RUN addgroup -g 1001 -S nodejs && \
@@ -89,11 +89,12 @@ RUN npm install --omit=dev --no-audit --no-fund --ignore-scripts
 WORKDIR /app/service
 RUN node -e "const fs=require('fs'); const pkg=JSON.parse(fs.readFileSync('package.json','utf8')); if(pkg.dependencies&&pkg.dependencies['@kodingcaravan/shared']==='workspace:*'){pkg.dependencies['@kodingcaravan/shared']='file:../shared';} if(pkg.devDependencies&&pkg.devDependencies['@kodingcaravan/shared']==='workspace:*'){pkg.devDependencies['@kodingcaravan/shared']='file:../shared';} fs.writeFileSync('package.json',JSON.stringify(pkg,null,2));" && \
     npm install --omit=dev --no-audit --no-fund --ignore-scripts && \
-    # Ensure shared package.json is properly linked in node_modules
+    # Replace symlink with real files (npm file: creates symlink; cp fails when src=dst)
+    rm -rf node_modules/@kodingcaravan/shared && \
     mkdir -p node_modules/@kodingcaravan/shared && \
     cp ../shared/package.json node_modules/@kodingcaravan/shared/ && \
     cp -r ../shared/dist node_modules/@kodingcaravan/shared/ && \
-    cp -r ../shared/node_modules node_modules/@kodingcaravan/shared/ 2>/dev/null || true && \
+    (cp -r ../shared/node_modules node_modules/@kodingcaravan/shared/ 2>/dev/null || true) && \
     # Verify package structure (static verification, no code execution)
     test -f node_modules/@kodingcaravan/shared/package.json || (echo "ERROR: Shared package.json not found!" && exit 1) && \
     test -f node_modules/@kodingcaravan/shared/dist/index.js || (echo "ERROR: Shared dist/index.js not found!" && exit 1) && \
