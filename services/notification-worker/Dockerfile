@@ -21,8 +21,8 @@ COPY services/notification-worker ./services/notification-worker
 RUN cd shared && npm run build
 RUN cd services/notification-worker && npm run build
 
-# Remove dev dependencies to reduce image size
-RUN npm prune --production
+# # Remove dev dependencies to reduce image size
+# RUN npm prune --production
 
 # Run as non-root for ECS security
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
