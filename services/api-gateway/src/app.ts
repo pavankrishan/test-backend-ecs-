@@ -64,6 +64,27 @@ app.options('*', cors(corsOptions));
 // Correlation ID middleware - must be early in the middleware chain
 app.use(correlationIdMiddleware);
 
+// ---- HEALTH CHECKS (before timeout & rate limiters so ALB probes get fast 200) ----
+app.get('/health', (req, res) => {
+  // Get WebSocket connection count if available
+  const wsConnectionCount = (global as any).wsConnectionCount || 0;
+
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    service: 'api-gateway',
+    wsConnections: wsConnectionCount,
+  });
+});
+
+app.get('/ready', (_req, res) => {
+  res.status(200).json({
+    status: 'ready',
+    service: 'api-gateway',
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // PHASE 5: Request timeout middleware (30 seconds for API Gateway)
 app.use(timeout('30s'));
 
@@ -114,28 +135,6 @@ app.use(roleBasedRateLimiter);
 // } catch (error) {
 //   logger.warn('OpenAPI spec not found, skipping validation');
 // }
-
-// Health check (liveness)
-app.get('/health', (req, res) => {
-  // Get WebSocket connection count if available
-  const wsConnectionCount = (global as any).wsConnectionCount || 0;
-  
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    service: 'api-gateway',
-    wsConnections: wsConnectionCount,
-  });
-});
-
-// Readiness probe (api-gateway is always ready once started)
-app.get('/ready', (_req, res) => {
-  res.status(200).json({
-    status: 'ready',
-    service: 'api-gateway',
-    timestamp: new Date().toISOString(),
-  });
-});
 
 // Handle preflight OPTIONS requests explicitly
 app.options('*', (req, res) => {
