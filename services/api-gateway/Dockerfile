@@ -1,6 +1,12 @@
 # Production Dockerfile Template for KodingCaravan Services
 # Architecture: ONE SERVICE = ONE IMAGE
-# 
+#
+# BUILD: Run from REPO ROOT (not from this directory). Context must include
+#        package.json, shared/, and services/api-gateway/.
+#
+#   From repo root:
+#     docker build -t api-gateway:latest -f services/api-gateway/Dockerfile .
+#
 # USAGE: Copy this file to services/<service-name>/Dockerfile
 # Replace api-gateway and 3000 placeholders
 #

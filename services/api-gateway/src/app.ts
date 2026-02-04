@@ -18,6 +18,10 @@ import { roleBasedRateLimiter, authRateLimiter } from '@kodingcaravan/shared/mid
 
 const app: Express = express();
 
+// Trust ALB (and other reverse proxies) so req.ip, req.protocol, req.hostname use X-Forwarded-* headers.
+// Required for correct behavior when traffic comes through ALB; without it, proxied requests can fail (e.g. 503).
+app.set('trust proxy', true);
+
 // Security middleware
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
