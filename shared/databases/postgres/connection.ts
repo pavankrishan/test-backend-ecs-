@@ -14,10 +14,12 @@ export function buildPostgresConnectionString(env: NodeJS.ProcessEnv): string {
 			'Set POSTGRES_URL to your cloud database connection string (e.g. Render, Neon, Supabase).'
 		);
 	}
-	// Allow SSL mode to be appended if not present and SSL requested
+	// Allow SSL mode to be appended if not present and SSL requested.
+	// Use uselibpqcompat=true&sslmode=require to satisfy pg-connection-string v3 / pg v9 and avoid
+	// "SECURITY WARNING: The SSL modes 'prefer', 'require' are treated as aliases for 'verify-full'".
 	if (env.POSTGRES_SSL === 'true' && !/sslmode=/.test(url)) {
 		const sep = url.includes('?') ? '&' : '?';
-		return `${url}${sep}sslmode=require`;
+		return `${url}${sep}uselibpqcompat=true&sslmode=require`;
 	}
 	return url;
 }
@@ -34,18 +36,18 @@ export function createPostgresPool(overrides: Partial<CloudDatabaseConfig> = {})
 	// Build connection string from environment variables
 	// Supports POSTGRES_URL, POSTGRES_URI, or DATABASE_URL
 	const connectionString = buildPostgresConnectionString(process.env);
-	const sslEnv = process.env.POSTGRES_SSL === 'true';
-	const sslFromUrl = /sslmode=require|ssl=true/i.test(connectionString);
-	const useSsl = sslEnv || sslFromUrl;
+	// ECS/Render: POSTGRES_SSL must be read from process.env (no .env in ECS)
+	const ssl =
+		process.env.POSTGRES_SSL === 'true' ? { rejectUnauthorized: false } : false;
 
 	// Always pass connectionString to createCloudConnectionPool
 	// This ensures DATABASE_URL, POSTGRES_URL, or individual vars all work
 	return createCloudConnectionPool({
 		connectionString,
-		ssl: useSsl ? { rejectUnauthorized: false } : false,
+		ssl,
 		max: 10,
 		idleTimeoutMillis: 30000,
-		connectionTimeoutMillis: 10000,
+		connectionTimeoutMillis: 30000, // 30s for ECS/RDS cold start and slow networks
 		...overrides,
 	});
 }

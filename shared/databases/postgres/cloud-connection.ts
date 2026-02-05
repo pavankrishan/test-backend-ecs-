@@ -26,7 +26,7 @@ export interface CloudDatabaseConfig {
   connectionTimeoutMillis?: number;
 
   // Cloud provider detection
-  provider?: 'aws-rds' | 'google-cloud-sql' | 'azure-database' | 'digital-ocean' | 'supabase' | 'neon' | 'other';
+  provider?: 'aws-rds' | 'google-cloud-sql' | 'azure-database' | 'digital-ocean' | 'supabase' | 'neon' | 'render' | 'other';
 }
 
 /**
@@ -43,7 +43,7 @@ export function detectCloudProvider(host?: string, connectionString?: string): C
   if (target.includes('digitalocean')) return 'digital-ocean';
   if (target.includes('supabase')) return 'supabase';
   if (target.includes('neon.tech')) return 'neon';
-  if (target.includes('render.com')) return 'other'; // Render PostgreSQL (cloud)
+  if (target.includes('render.com')) return 'render';
 
   return 'other';
 }
@@ -67,7 +67,7 @@ export function getCloudDatabaseConfig(env: NodeJS.ProcessEnv = process.env): Cl
     min: SAFE_POOL_LIMITS.getMin(),
     max: SAFE_POOL_LIMITS.getMax(), // Safe limit: 10 per service in production
     idleTimeoutMillis: 30000, // 30 seconds
-    connectionTimeoutMillis: 20000, // 20 seconds
+    connectionTimeoutMillis: 30000, // 30 seconds (ECS/RDS cold start, slow networks)
   };
 
   // Provider-specific optimizations
@@ -126,6 +126,16 @@ export function getCloudDatabaseConfig(env: NodeJS.ProcessEnv = process.env): Cl
         idleTimeoutMillis: 60000, // Neon keeps connections alive longer
       };
 
+    case 'render':
+      // From ECS/EC2 use Render External Database URL (not Internal).
+      return {
+        ...baseConfig,
+        ssl: { rejectUnauthorized: false },
+        max: SAFE_POOL_LIMITS.getMax(),
+        connectionTimeoutMillis: 60000, // Render free-tier spins down; first connection can take 60s
+        idleTimeoutMillis: 30000,
+      };
+
     default:
       // Generic cloud database settings
       return {
@@ -156,8 +166,14 @@ export function createCloudConnectionPool(config?: Partial<CloudDatabaseConfig>)
   const finalConfig: PoolConfig = {
     connectionString,
 
-    // SSL configuration
-    ssl: config?.ssl !== undefined ? config.ssl : cloudConfig.ssl,
+    // SSL: ECS has no .env — use POSTGRES_SSL or, for Render/Neon/Supabase, default to SSL
+    ssl: config?.ssl !== undefined
+      ? config.ssl
+      : process.env.POSTGRES_SSL === 'true'
+        ? { rejectUnauthorized: false }
+        : (cloudConfig.provider === 'render' || cloudConfig.provider === 'neon' || cloudConfig.provider === 'supabase')
+          ? (cloudConfig.ssl as object)
+          : false,
 
     // Pool configuration
     min: config?.min || cloudConfig.min,

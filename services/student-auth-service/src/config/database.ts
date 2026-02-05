@@ -7,7 +7,7 @@ let pool: Pool | null = null;
 export function getPool(): Pool {
 	if (!pool) {
 		pool = createPostgresPool({
-			connectionTimeoutMillis: 20000, // Increase timeout to 20 seconds
+			connectionTimeoutMillis: 30000, // 30s for ECS/RDS cold start
 			max: 10,
 		});
 	}
